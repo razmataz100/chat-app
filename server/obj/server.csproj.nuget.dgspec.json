@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\nackademin\\datakom\\chat-app\\server\\server.csproj": {}
+    "C:\\nackademin\\datakom\\chatapp\\server\\server.csproj": {}
   },
   "projects": {
-    "C:\\nackademin\\datakom\\chat-app\\server\\server.csproj": {
+    "C:\\nackademin\\datakom\\chatapp\\server\\server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\nackademin\\datakom\\chat-app\\server\\server.csproj",
+        "projectUniqueName": "C:\\nackademin\\datakom\\chatapp\\server\\server.csproj",
         "projectName": "server",
-        "projectPath": "C:\\nackademin\\datakom\\chat-app\\server\\server.csproj",
+        "projectPath": "C:\\nackademin\\datakom\\chatapp\\server\\server.csproj",
         "packagesPath": "C:\\Users\\Musse\\.nuget\\packages\\",
-        "outputPath": "C:\\nackademin\\datakom\\chat-app\\server\\obj\\",
+        "outputPath": "C:\\nackademin\\datakom\\chatapp\\server\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Musse\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -40,17 +40,9 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Microsoft.AspNetCore.OpenApi": {
-              "target": "Package",
-              "version": "[8.0.1, )"
-            },
             "Microsoft.AspNetCore.SignalR": {
               "target": "Package",
               "version": "[1.1.0, )"
-            },
-            "Swashbuckle.AspNetCore": {
-              "target": "Package",
-              "version": "[6.4.0, )"
             }
           },
           "imports": [
