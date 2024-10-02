@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
+import DOMPurify from 'dompurify';
 import './Chat.css';
 
 const Chat = () => {
@@ -9,23 +10,30 @@ const Chat = () => {
     const [error, setError] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const connectionRef = useRef(null);
+    const domPurifyConf = {};
 
     useEffect(() => {
+        // Establishes a connection to the SignalR hub and sets up message reception
         const connect = async () => {
             const newConnection = new HubConnectionBuilder()
                 .withUrl('https://localhost:7193/chathub')
                 .build();
-
+    
             if (connectionRef.current !== newConnection) {
                 connectionRef.current = newConnection;
-
+                
+                // Handles incoming messages and sanitizes user input
                 newConnection.on('ReceiveMessage', (user, message) => {
-                    const newMessage = { user, message };
+                    const sanitizedUser = DOMPurify.sanitize(user, domPurifyConf); // Sanitize username
+                    const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf); // Sanitize message
+                    
+                    const newMessage = { user: sanitizedUser, message: sanitizedMessage };
                     setMessages((prev) => [...prev, newMessage]);
                     console.log('Received message:', newMessage);
                 });
+                
             }
-
+    
             try {
                 await newConnection.start();
                 console.log('Connection established');
@@ -35,9 +43,10 @@ const Chat = () => {
                 setIsConnected(false);
             }
         };
-
+    
         connect();
-
+        
+        // Cleanup function to stop the connection on component unmount
         return () => {
             if (connectionRef.current) {
                 connectionRef.current.off('ReceiveMessage');
@@ -47,6 +56,7 @@ const Chat = () => {
         };
     }, []);
 
+    // Sends the message to the SignalR hub
     const sendMessage = async () => {
         console.log('sendMessage called');
         if (!username) {
@@ -67,11 +77,13 @@ const Chat = () => {
         }
     };
 
+    // Handles button click for sending the message
     const handleButtonClick = (e) => {
         e.preventDefault();
         sendMessage();
     };
 
+    // Handles key down event to send message on Enter key press
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
