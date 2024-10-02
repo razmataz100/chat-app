@@ -1,9 +1,10 @@
 import React from 'react';
-import Chat from './components/Chat'; 
+import './App.css';
+import Chat from './components/Chat';  // Corrected import path
+
 function App() {
     return (
-        <div>
-            <h1>Chat Application</h1>
+        <div className="app">
             <Chat />
         </div>
     );

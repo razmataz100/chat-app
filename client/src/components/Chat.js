@@ -1,68 +1,87 @@
-import React, { useEffect, useState } from 'react';
-import { HubConnectionBuilder } from '@microsoft/signalr';
-import './Chat.css'; 
+import React, { useEffect, useState, useRef } from 'react';
+import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
+import './Chat.css';
 
 const Chat = () => {
-    const [connection, setConnection] = useState(null);
     const [username, setUsername] = useState('');
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState('');
+    const [isConnected, setIsConnected] = useState(false);
+    const connectionRef = useRef(null);
 
     useEffect(() => {
-        console.log("Chat component mounted"); 
-
         const connect = async () => {
             const newConnection = new HubConnectionBuilder()
-                .withUrl('http://localhost:5207/chathub')
+                .withUrl('https://localhost:7193/chathub')
                 .build();
 
-            newConnection.on('ReceiveMessage', (user, message) => {
-                console.log("Message received:", user, message); 
-                const newMessage = { user, message };
-                setMessages((prev) => [...prev, newMessage]);
-            });
+            if (connectionRef.current !== newConnection) {
+                connectionRef.current = newConnection;
 
-            await newConnection.start();
-            console.log("Connected to SignalR server");
-            setConnection(newConnection);
-        };
+                newConnection.on('ReceiveMessage', (user, message) => {
+                    const newMessage = { user, message };
+                    setMessages((prev) => [...prev, newMessage]);
+                    console.log('Received message:', newMessage);
+                });
+            }
 
-        if (!connection) { // Only connect if there's no existing connection
-            connect();
-        }
-
-        return () => {
-            console.log("Chat component unmounted"); 
-            if (connection) {
-                connection.off('ReceiveMessage'); // Properly remove the listener
-                connection.stop();
+            try {
+                await newConnection.start();
+                console.log('Connection established');
+                setIsConnected(true);
+            } catch (err) {
+                console.error('Connection failed:', err);
+                setIsConnected(false);
             }
         };
-    }, [connection]); // Dependency on connection
+
+        connect();
+
+        return () => {
+            if (connectionRef.current) {
+                connectionRef.current.off('ReceiveMessage');
+                connectionRef.current.stop();
+                console.log('Connection stopped');
+            }
+        };
+    }, []);
 
     const sendMessage = async () => {
-        console.log("Sending message:", message); 
-
+        console.log('sendMessage called');
         if (!username) {
             setError('Please enter a username.');
-            return; 
+            return;
         }
 
-        if (connection && message) {
-            await connection.invoke('SendMessage', username, message);
-            setMessage(''); 
-            setError(''); 
+        if (connectionRef.current && message) {
+            if (connectionRef.current.state === HubConnectionState.Connected) {
+                await connectionRef.current.invoke('SendMessage', username, message);
+                setMessage('');
+                setError('');
+                console.log('Sent message:', { user: username, message });
+            } else {
+                console.error('Connection is not established. Cannot send message.');
+                setError('Cannot send message. Connection is not established.');
+            }
         }
     };
 
     const handleButtonClick = (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
         sendMessage();
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
     return (
-        <div>
+        <div className="chat-container">
+            <h1 className="chat-title">Hey, what's up?</h1>
             <input
                 type="text"
                 placeholder="Username"
@@ -77,18 +96,26 @@ const Chat = () => {
                 placeholder="Message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
             />
-            <button onClick={handleButtonClick}>Send</button>
+            <button className="button" onClick={handleButtonClick} disabled={!isConnected}>Send</button>
 
-            {error && <div className="error-message">{error}</div>} 
 
-            <div>
-                {messages.map((msg, index) => (
-                    <div key={index}>
-                        <strong>{msg.user}:</strong> {msg.message}
-                    </div>
-                ))}
-            </div>
+            {error && <div className="error-message">{error}</div>}
+
+            <div className="message-container">
+                {messages.slice().reverse().map((msg, index) => (
+                    <div className={`message ${msg.user === username ? 'sent' : 'received'}`} key={index}>
+                        {msg.user === username ? (
+                        <strong className="sent-username">{msg.user}</strong>
+                         ) : (
+                        <strong className="received-username">{msg.user}</strong>
+            )}
+            <div>{msg.message}</div>
+        </div>
+    ))}
+</div>
+
         </div>
     );
 };

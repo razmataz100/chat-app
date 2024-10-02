@@ -1,36 +1,19 @@
+/* index.css */
 
+/* Reset some default browser margins and paddings */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
+/* Set the height for html and body to ensure full viewport height is used */
+html, body {
+    height: 100%;
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    color: #333;
 }
 
-input {
-    margin: 5px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-div {
-    margin: 10px;
+/* Ensure the main app fills the viewport */
+#root {
+    height: 100%;
 }
