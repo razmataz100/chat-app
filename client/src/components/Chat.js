@@ -3,73 +3,68 @@ import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import DOMPurify from 'dompurify';
 import './Chat.css';
 
-const Chat = () => {
-    const [username, setUsername] = useState('');
+const Chat = ({ loggedInUser }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const connectionRef = useRef(null);
     const domPurifyConf = {};
+    
+    // Ensure loggedInUser is defined before accessing username
+    const username = loggedInUser?.username;
 
     useEffect(() => {
-        // Establishes a connection to the SignalR hub and sets up message reception
         const connect = async () => {
-            const newConnection = new HubConnectionBuilder()
-                .withUrl('https://localhost:7193/chathub')
-                .build();
-    
-            if (connectionRef.current !== newConnection) {
-                connectionRef.current = newConnection;
-                
-                // Handles incoming messages and sanitizes user input
+            try {
+                const newConnection = new HubConnectionBuilder()
+                    .withUrl('https://localhost:7193/chathub', {
+                        accessTokenFactory: () => localStorage.getItem('token'),
+                    })
+                    .build();
+
+                // Event listener for receiving messages
                 newConnection.on('ReceiveMessage', (user, message) => {
-                    const sanitizedUser = DOMPurify.sanitize(user, domPurifyConf); // Sanitize username
-                    const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf); // Sanitize message
-                    
+                    const sanitizedUser = DOMPurify.sanitize(user, domPurifyConf);
+                    const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf);
                     const newMessage = { user: sanitizedUser, message: sanitizedMessage };
                     setMessages((prev) => [...prev, newMessage]);
-                    console.log('Received message:', newMessage);
                 });
-                
-            }
-    
-            try {
+
+                // Start connection
                 await newConnection.start();
-                console.log('Connection established');
                 setIsConnected(true);
+                connectionRef.current = newConnection;
+
             } catch (err) {
                 console.error('Connection failed:', err);
+                setError('Failed to connect to the chat. Please check your connection.');
                 setIsConnected(false);
             }
         };
-    
+
         connect();
-        
-        // Cleanup function to stop the connection on component unmount
+
+        // Cleanup on unmount
         return () => {
             if (connectionRef.current) {
                 connectionRef.current.off('ReceiveMessage');
-                connectionRef.current.stop();
-                console.log('Connection stopped');
+                connectionRef.current.stop().catch(err => console.error('Error stopping connection:', err));
             }
         };
     }, []);
 
-    // Sends the message to the SignalR hub
     const sendMessage = async () => {
-        console.log('sendMessage called');
-        if (!username) {
-            setError('Please enter a username.');
-            return;
-        }
-
         if (connectionRef.current && message) {
             if (connectionRef.current.state === HubConnectionState.Connected) {
-                await connectionRef.current.invoke('SendMessage', username, message);
-                setMessage('');
-                setError('');
-                console.log('Sent message:', { user: username, message });
+                try {
+                    await connectionRef.current.invoke('SendMessage', username, message);
+                    setMessage('');
+                    setError('');
+                } catch (sendError) {
+                    console.error('Message sending failed:', sendError);
+                    setError('Failed to send message. Please try again.');
+                }
             } else {
                 console.error('Connection is not established. Cannot send message.');
                 setError('Cannot send message. Connection is not established.');
@@ -77,13 +72,11 @@ const Chat = () => {
         }
     };
 
-    // Handles button click for sending the message
     const handleButtonClick = (e) => {
         e.preventDefault();
         sendMessage();
     };
 
-    // Handles key down event to send message on Enter key press
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -93,16 +86,7 @@ const Chat = () => {
 
     return (
         <div className="chat-container">
-            <h1 className="chat-title">Hey, what's up?</h1>
-            <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => {
-                    setUsername(e.target.value);
-                    setError('');
-                }}
-            />
+            <h1 className="chat-title">Hey, what's up {username}?</h1>
             <input
                 type="text"
                 placeholder="Message"
@@ -112,22 +96,20 @@ const Chat = () => {
             />
             <button className="button" onClick={handleButtonClick} disabled={!isConnected}>Send</button>
 
-
             {error && <div className="error-message">{error}</div>}
 
             <div className="message-container">
                 {messages.slice().reverse().map((msg, index) => (
                     <div className={`message ${msg.user === username ? 'sent' : 'received'}`} key={index}>
                         {msg.user === username ? (
-                        <strong className="sent-username">{msg.user}</strong>
-                         ) : (
-                        <strong className="received-username">{msg.user}</strong>
-            )}
-            <div>{msg.message}</div>
-        </div>
-    ))}
-</div>
-
+                            <strong className="sent-username">{msg.user}</strong>
+                        ) : (
+                            <strong className="received-username">{msg.user}</strong>
+                        )}
+                        <div>{msg.message}</div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
