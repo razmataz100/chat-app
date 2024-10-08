@@ -1,4 +1,4 @@
-.login-container {
+.register-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -8,7 +8,7 @@
     text-align: center; 
 }
 
-.login-title {
+.register-title {
     margin-bottom: 20px;
     color: #f0f0f0;
     font-size: 2rem;
@@ -19,19 +19,26 @@ button {
     color: white;
     cursor: pointer; 
     margin-top: 18px;
-    width: 50%;
+    width: 80%;
 }
 
-.register-link {
+.success-message {
+    color: green;
+    margin-top: 20px;
+    font-size: 1.5rem;
+}
+
+.back-link {
     margin-top: 10px;
-    font-size: 0.9em;
 }
 
-.register-link a {
+.back-link span {
     color: white;
-    text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: underline;
 }
 
-.register-link a:hover {
-    text-decoration: underline;
+.back-link span:hover {
+    color: #0056b3;
 }

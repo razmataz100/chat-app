@@ -1,19 +1,14 @@
-/* index.css */
-
-/* Reset some default browser margins and paddings */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Set the height for html and body to ensure full viewport height is used */
 html, body {
     height: 100%;
     font-family: Arial, sans-serif;
 }
 
-/* Ensure the main app fills the viewport */
 #root {
     height: 100%;
 }
