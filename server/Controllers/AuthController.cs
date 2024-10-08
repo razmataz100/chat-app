@@ -1,44 +1,52 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ChatApp.Models.DTOs;
-using ChatApp.Data;
-using Microsoft.AspNetCore.Authorization;
+using ChatApp.Services;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
-namespace ChatApp.Controllers
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AuthController : ControllerBase
+    private readonly IUserService _userService;
+
+    public AuthController(IUserService userService)
     {
-        private readonly ChatAppDbContext _context;
-        private readonly ITokenService _tokenService;
+        _userService = userService;
+    }
 
-        public AuthController(ChatAppDbContext context, ITokenService tokenService)
+    // Registers a new user with provided credentials   
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserCredentials registrationCredentials)
+    {
+        if (!ModelState.IsValid)
         {
-            _context = context;
-            _tokenService = tokenService;
+            return BadRequest(ModelState);
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
+        var result = await _userService.RegisterUserAsync(registrationCredentials);
+        if (result.Success)
         {
-            try
-            {
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Username == loginRequest.Username);
-
-                if (user != null && user.Password == loginRequest.Password) 
-                {
-                    var token = _tokenService.GenerateJwtToken(user.Username);
-                    return Ok(new { Token = token });
-                }
-
-                return Unauthorized("Invalid username or password.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            return Ok(new { message = "User registered successfully." });
         }
+        
+        return BadRequest(new { message = result.ErrorMessage });
+    }
+
+    // Authenticates a user and returns a token if successful
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] UserCredentials loginCredentials)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var token = await _userService.AuthenticateUserAsync(loginCredentials);
+        if (token != null)
+        {
+            return Ok(new { token });
+        }
+
+        return Unauthorized(new { message = "Invalid credentials." });
     }
 }

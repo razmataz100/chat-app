@@ -3,17 +3,17 @@ import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import DOMPurify from 'dompurify';
 import './Chat.css';
 
-const Chat = ({ loggedInUser }) => {
+const Chat = ({ loggedInUser, onLogout }) => { 
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState('');
     const [isConnected, setIsConnected] = useState(false);
     const connectionRef = useRef(null);
     const domPurifyConf = {};
-    
-    // Ensure loggedInUser is defined before accessing username
+
     const username = loggedInUser?.username;
 
+    //connection to the SignalR Hub and message receiving
     useEffect(() => {
         const connect = async () => {
             try {
@@ -23,7 +23,7 @@ const Chat = ({ loggedInUser }) => {
                     })
                     .build();
 
-                // Event listener for receiving messages
+                // Listen for incoming messages
                 newConnection.on('ReceiveMessage', (user, message) => {
                     const sanitizedUser = DOMPurify.sanitize(user, domPurifyConf);
                     const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf);
@@ -31,7 +31,6 @@ const Chat = ({ loggedInUser }) => {
                     setMessages((prev) => [...prev, newMessage]);
                 });
 
-                // Start connection
                 await newConnection.start();
                 setIsConnected(true);
                 connectionRef.current = newConnection;
@@ -45,7 +44,7 @@ const Chat = ({ loggedInUser }) => {
 
         connect();
 
-        // Cleanup on unmount
+        // Cleanup connection when component unmounts
         return () => {
             if (connectionRef.current) {
                 connectionRef.current.off('ReceiveMessage');
@@ -54,6 +53,7 @@ const Chat = ({ loggedInUser }) => {
         };
     }, []);
 
+    // Sends a message to the chat if the connection is established
     const sendMessage = async () => {
         if (connectionRef.current && message) {
             if (connectionRef.current.state === HubConnectionState.Connected) {
@@ -72,11 +72,13 @@ const Chat = ({ loggedInUser }) => {
         }
     };
 
+    // Handles button click for sending a message
     const handleButtonClick = (e) => {
         e.preventDefault();
         sendMessage();
     };
 
+    // Handles key down events to send messages when Enter is pressed
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -84,9 +86,15 @@ const Chat = ({ loggedInUser }) => {
         }
     };
 
+    // Handles user logout
+    const handleLogout = () => {
+        onLogout();
+    };
+
     return (
         <div className="chat-container">
             <h1 className="chat-title">Hey, what's up {username}?</h1>
+            <button className="logout-button" onClick={handleLogout}>Logout</button>
             <input
                 type="text"
                 placeholder="Message"

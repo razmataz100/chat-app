@@ -4,10 +4,11 @@ using System.Text;
 using ChatApp.Hubs;
 using ChatApp.Data;
 using Microsoft.EntityFrameworkCore;
+using ChatApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel
+// Configure Kestrel 
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(5125); 
@@ -17,7 +18,7 @@ builder.WebHost.ConfigureKestrel(options =>
     });
 });
 
-// Add CORS policy
+// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", builder =>
@@ -29,11 +30,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure Entity Framework with SQL Server database context
 builder.Services.AddDbContext<ChatAppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// JWT Authentication
+// Retrieve JWT settings from configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+// Configure authentication with JWT Bearer tokens
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -54,11 +57,13 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+// Register application services
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
-// Middleware pipeline
+// Middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
@@ -67,7 +72,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Map SignalR hub
+// Map SignalR hub endpoint
 app.MapHub<ChatHub>("/chathub");
+
 
 app.Run();
